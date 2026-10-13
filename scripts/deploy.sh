@@ -16,15 +16,9 @@ image_digest="${APP_IMAGE#"$CI_REGISTRY_IMAGE"@sha256:}"
 [[ "$APP_CONTAINER_NAME" =~ ^[a-zA-Z0-9][a-zA-Z0-9_.-]*$ ]] || fail "Invalid container name."
 [[ "$APP_NETWORK_ALIAS" =~ ^[a-zA-Z0-9][a-zA-Z0-9_.-]*$ ]] || fail "Invalid network alias."
 
-# Admins must create the root and app directory in advance. Resolve existing paths
-# before any file writes, so '..' and symbolic links cannot escape the agreed root.
-[[ "$DEPLOY_ROOT" == /* && "$DEPLOY_DIR" == /* ]] || fail "Deployment paths must be absolute."
-root="$(realpath -e -- "$DEPLOY_ROOT")"
-target="$(realpath -e -- "$DEPLOY_DIR")"
-[[ -d "$root" && -d "$target" && "$root" != / ]] || fail "Choose an existing dedicated deployment root."
-[[ "$target" == "$root/"* ]] || fail "DEPLOY_DIR must be a strict child of DEPLOY_ROOT."
-[[ "$target" != "$(realpath -e -- "$CI_PROJECT_DIR")" ]] || fail "Do not deploy into the CI checkout."
-[[ ! -L "$target/compose.json" && ! -L "$target/release.txt" ]] || fail "Release files must not be symbolic links."
+# Validate the destination and let the job create its app folder on first use.
+# The existing platform root and runner permissions are configured once per host.
+target="$(prepare_deployment_directory)"
 
 # A retry may repeat the same pipeline, but an older pipeline must not replace a
 # newer successful deployment. GitLab also serializes this job with resource_group.

@@ -123,26 +123,124 @@ geprüfte Secret-Konfiguration, niemals in dieses Repository oder Image.
 
 ## Optionaler Erstimport aus GitHub
 
-1. Schicken Sie den Hosting-Admins diese öffentliche GitHub-URL, den gewünschten
-   Projektnamen, die vorgesehene Revision und die gewünschte Sichtbarkeit:
+Nur die Hosting-Admins können in **Gemi** (Namespace `gemi`) Projekte anlegen
+oder importieren. Als Anwendungsverantwortlicher bitten Sie sie um den Import.
+Sind Sie selbst Hosting-Admin, führen Sie die folgenden Schritte aus. Für dieses
+Beispiel wird ein öffentliches GitLab-Projekt gewünscht, ebenso wie die
+öffentliche GitHub-Quelle.
 
-   ```text
-   https://github.com/ctreffe/docker-flask-demo.git
-   ```
+### Import anfragen
 
-2. Die Hosting-Admins prüfen, ob der URL-Import auf `gitlab.gwdg.de` aktiviert ist.
-   Sie wählen **New project/repository > Import project > Repository by URL**,
-   importieren das Repository in **Gemi**, stellen die vereinbarte Sichtbarkeit
-   ein und geben Ihnen Zugriff. Die öffentliche GitHub-Quelle benötigt für
-   diesen Import keine GitHub-Zugangsdaten.
-3. Öffnen Sie das importierte GitLab-Projekt und prüfen Sie den vorgesehenen
-   Commit und die Dateien. Pipeline und Skripte sind bereits enthalten;
-   YAML muss nicht kopiert werden.
+Schicken Sie den Hosting-Admins die folgenden Angaben und Ihren GitLab-Benutzernamen:
 
-Den Erstimport führt GitLab selbst aus, kein Runner. Er kopiert das Repository
-einmal und richtet keine kontinuierliche Synchronisation ein. Die Hosting-Admins
-prüfen den importierten CI-Code, bevor sie Zugriff auf Deployment-Runner oder
-Zugangsdaten freigeben. Mit den Vorgaben läuft nur der isolierte Test-Job.
+| Angabe | Wert für dieses Beispiel |
+|---|---|
+| Öffentliches Quellrepository | `https://github.com/ctreffe/docker-flask-demo.git` |
+| Quellbranch | `main`; den vorgesehenen letzten Commit vor dem Import abstimmen |
+| Zielinstanz | `https://gitlab.gwdg.de` |
+| Zielgruppe / Namespace | **Gemi** / `gemi` |
+| Projektname und Slug | `docker-flask-demo` |
+| Sichtbarkeit | **Public** (öffentlich) |
+
+Die Quell-URL muss auf das GitHub-Repository zeigen. Der Ziel-Namespace legt fest,
+wo GitLab das neue Projekt anlegt; er ist nicht die Quell-URL.
+
+### Importschritte für die Hosting-Admins
+
+1. Öffnen Sie [gitlab.gwdg.de](https://gitlab.gwdg.de) und melden Sie sich mit Ihrem
+   berechtigten Konto an. Bestätigen Sie, dass Sie Projekte in **Gemi** anlegen
+   dürfen und der Zielprojektname verfügbar ist.
+2. Öffnen Sie **Create new** (das Plus-Menü) und wählen Sie **New project/repository**.
+   Wählen Sie **Import project**, dann **Repository by URL**. Bezeichnungen und
+   Menüpositionen können je nach installierter GitLab-Version und Sprache der
+   Oberfläche abweichen.
+3. Tragen Sie unter **Git repository URL** die URL
+   `https://github.com/ctreffe/docker-flask-demo.git` ein. Lassen Sie die Felder
+   für Benutzername und Passwort/Token der Quelle leer: Dieses Repository ist
+   öffentlich, sein Import benötigt daher keine GitHub-Zugangsdaten.
+4. Füllen Sie die Zielfelder wie folgt aus:
+
+   | Feld | Wert |
+   |---|---|
+   | Project name | `docker-flask-demo` |
+   | Project URL / namespace | **Gemi** (`gemi`) auswählen, nicht den persönlichen Namespace |
+   | Project slug / path | `docker-flask-demo` |
+   | Visibility level | **Public** (öffentlich), falls verfügbar; andernfalls Erstimport als **Private** abstimmen |
+
+   Prüfen Sie, dass der resultierende Zielpfad `gemi/docker-flask-demo` lautet.
+   Fehlt **Gemi**, lassen Sie die Gruppenberechtigungen prüfen. Fehlt **Repository
+   by URL**, fragen Sie die GitLab-Instanzadmins, ob diese Importquelle aktiviert
+   werden kann. Klären Sie fehlende Namespace- oder Importberechtigungen,
+   bevor Sie das Projekt anlegen. Ist **Public** nicht verfügbar, ist ein
+   abgestimmter Erstimport als **Private** möglich; siehe den Sichtbarkeitshinweis unten.
+5. Wählen Sie **Create project** und warten Sie, bis der Import abgeschlossen ist.
+   Die erwartete Projektadresse ist `https://gitlab.gwdg.de/gemi/docker-flask-demo`,
+   sofern der vereinbarte Namespace und Slug verwendet werden. Diese Adresse ist
+   ein Zielbeispiel, keine Bestätigung, dass das Projekt bereits existiert.
+6. Öffnen Sie das Repository auf Branch `main` und vergleichen Sie die vollständige
+   SHA des letzten Commits mit GitHub. Der URL-Import kopiert das Repository so,
+   wie es während des Imports vorliegt; eine vorgesehene SHA in der Anfrage
+   fixiert diesen Stand nicht. Hat sich GitHub inzwischen geändert, stimmen Sie
+   ab, welche Revision akzeptiert werden soll. Prüfen Sie, dass `app.py`,
+   `Dockerfile`, `.env.example`, `.gitlab-ci.yml`, `scripts/` und beide Readmes
+   vorhanden sind. Pipeline-Dateien und Skripte sind bereits enthalten.
+7. Gewähren Sie dem Anwendungsverantwortlichen die vereinbarte Projektmitgliedschaft
+   und schicken Sie ihm die Projekt-URL. Prüfen Sie den importierten CI-Code und
+   stellen Sie einen geeigneten Linux-Runner mit Docker-Executor für `test-app`
+   bereit. Behalten Sie für den ersten Test `HOSTING_ENABLED=false`,
+   `SYNC_ENABLED=false` und `RUN_SYNC=false` bei; bestätigen Sie, dass geerbte
+   Gruppen- oder Projektvariablen diese Werte nicht überschreiben.
+8. Öffnen Sie **Build > Pipelines** und prüfen Sie eine eventuell vorhandene
+   Pipeline für diesen Commit. Existiert keine, wählen Sie **New pipeline**
+   (in manchen Versionen **Run pipeline**), wählen Sie `main`, behalten Sie
+   `RUN_SYNC=false` bei und starten Sie die Pipeline. Bei deaktiviertem Hosting
+   und deaktivierter Synchronisation wird nur `test-app` ausgewählt. Öffnen Sie
+   dessen Log und prüfen Sie, dass er erfolgreich durchläuft. Bei einem wartenden
+   Job müssen die Admins die Runner-Verfügbarkeit prüfen; ein abgeschlossener
+   Import allein bestätigt nicht die Funktion von CI.
+
+### Wenn das Projekt zunächst privat importiert wurde
+
+Bei diesem Beispiel wurde **Public** beim Import auf `gitlab.gwdg.de` nicht
+angeboten; das Projekt wurde deshalb zunächst als **Private** angelegt.
+Der Grund für die fehlende Option ist noch nicht bestätigt. Der Import muss
+nicht allein deshalb wiederholt werden, weil sich die Sichtbarkeit später ändern kann.
+
+Bitten Sie einen Gruppen-Owner, die Sichtbarkeit von **Gemi** und gegebenenfalls
+übergeordneten Gruppen zu prüfen. Ein Projekt kann nicht öffentlicher sein als
+seine umgebenden Gruppen: Private Gruppen erlauben nur private Projekte,
+interne Gruppen erlauben keine öffentlichen Projekte. Schränkt die GitLab-Instanz
+öffentliche Sichtbarkeit ein, müssen die GWDG-Instanzadmins diese Einschränkung
+klären; ein Gruppen-Owner kann sie nicht übergehen.
+
+Sobald die erforderliche Gruppensichtbarkeit und die Instanzberechtigungen es
+zulassen, kann ein Projekt-Owner unter **Settings > General > Visibility, project
+features, permissions** die Einstellung **Project visibility** auf **Public**
+setzen und die Änderung speichern. Eine öffentliche Gruppe macht ihre vorhandenen
+privaten Projekte nicht automatisch öffentlich.
+
+Solange das Projekt privat bleibt, können berechtigte Mitglieder seine Dateien
+und die Testpipeline weiter prüfen. Die öffentliche Repository-Sichtbarkeit ist
+von der späteren Hostnamen- und Webzugriffskonfiguration der Anwendung getrennt.
+
+### Was der Import bewirkt
+
+Den Erstimport führt GitLab selbst aus, kein Runner. Er kopiert das Git-Repository
+einmal einschließlich seiner Historie, richtet keine kontinuierliche
+Synchronisation ein und kopiert keine GitHub-Issues und Pull Requests.
+Hosting-Einrichtung und optionale spätere Synchronisation sind separate Schritte,
+die weiter unten beschrieben werden.
+
+Anwendungsverantwortliche prüfen nach Erhalt des Zugriffs die importierte Revision
+und die Dateien. Die Hosting-Admins prüfen den importierten CI-Code, bevor sie
+Zugriff auf Deployment-Runner oder Zugangsdaten freigeben. Eine erfolgreiche erste
+Testpipeline bestätigt den Test-Job; sie deployt die Anwendung nicht.
+
+Das Verfahren folgt der [GitLab-Dokumentation zum URL-Import](https://docs.gitlab.com/user/import/third_party_systems/repo_by_url/),
+den [Regeln zur Projektsichtbarkeit](https://docs.gitlab.com/user/public_access/) und
+der [Dokumentation zu manuellen Pipelines](https://docs.gitlab.com/ci/pipelines/#run-a-pipeline-manually).
+Die Verfügbarkeit der Importoption und die angemeldete GWDG-Oberfläche müssen
+die Hosting-Admins weiterhin auf der tatsächlichen Instanz bestätigen.
 
 ## Hosting-Einrichtung durch die Admins
 
@@ -159,9 +257,13 @@ Aktivieren Sie die Container Registry des Projekts und schützen Sie den
 Default-Branch. Konfigurieren Sie, wer ihn ändern oder seine Pipelines starten
 darf. Aktivieren Sie **Prevent outdated deployment jobs** in den
 GitLab-Deployment-Einstellungen. Konfigurieren Sie die Kontrollen der Umgebung
-`production`, soweit die installierte Edition sie unterstützt. Legen Sie ein
-eigenes Anwendungsverzeichnis unterhalb eines vorhandenen Deployment-Stammverzeichnisses
-an und bestätigen Sie, dass `dockernet` existiert.
+`production`, soweit die installierte Edition sie unterstützt. Wählen Sie ein
+eigenes Anwendungsverzeichnis unterhalb des vorhandenen Deployment-Stammverzeichnisses
+der Plattform und bestätigen Sie, dass `dockernet` existiert. Der Deployment-Job
+erstellt fehlende Anwendungsverzeichnisse selbst; für jede neue Anwendung ist
+keine manuelle Verzeichnisanlage erforderlich. Der Runner muss bereits unter
+dem gewählten Stammverzeichnis Verzeichnisse anlegen und in ein vorhandenes
+Anwendungsverzeichnis schreiben dürfen. Das gehört zur gemeinsamen Plattform-Einrichtung.
 
 Fügen Sie die folgenden Variablen unter **Settings > CI/CD > Variables** hinzu.
 Hosting- und Sync-Einstellungen müssen geschützt und für ihre Jobs verfügbar
@@ -175,7 +277,7 @@ weder vordefinierte `CI_*`-Variablen noch die Release-Artefaktvariablen
 | `HOSTING_ENABLED` | `true` nach Prüfung der Hosting-Einrichtung; Vorgabe ist `false` |
 | `GREETING_TEXT` | Öffentlicher Begrüßungstext, etwa `Hello from GitLab!`; die Anwendung hat eine Vorgabe |
 | `DEPLOY_ROOT` | Absoluter Pfad eines vorhandenen, von den Admins freigegebenen Deployment-Stammverzeichnisses; niemals `/` |
-| `DEPLOY_DIR` | Absoluter Pfad eines vorhandenen Anwendungsverzeichnisses strikt unterhalb dieses Stammverzeichnisses |
+| `DEPLOY_DIR` | Absoluter Anwendungsverzeichnispfad strikt unterhalb dieses Stammverzeichnisses; der Job legt es bei Bedarf an |
 | `APP_CONTAINER_NAME` | Von den Admins zugewiesener eindeutiger Containername |
 | `APP_NETWORK_ALIAS` | Von den Admins zugewiesener eindeutiger Backend-Name auf `dockernet` |
 | `SYNC_ENABLED` | `true` nur dann, wenn spätere GitHub-Updates gewünscht sind; Vorgabe ist `false` |
@@ -244,9 +346,19 @@ diese importierte Revision vor dem Deployment.
 Das Deployment nutzt die unveränderliche `@sha256:`-Image-Referenz des Builds
 und prüft deren Commit- und Pipeline-Labels. Es lehnt einen veralteten Branch-Stand
 oder eine ältere Pipeline als das letzte erfolgreiche Deployment ab.
-Das Skript prüft den vorhandenen Zielpfad vor Schreibzugriffen, startet das
-Image über Compose, wartet auf dessen Healthcheck und prüft den HTTP-Zugriff
-aus `dockernet`.
+Das Skript prüft den aufgelösten Zielpfad vor Schreibzugriffen, erstellt ein
+fehlendes Anwendungsverzeichnis und startet das Image über Compose. Es wartet
+auf den Healthcheck und prüft den HTTP-Zugriff aus `dockernet`. Neue Verzeichnisse
+sind nur für den Runner-Benutzer zugänglich (Modus `0700`); vorhandene Verzeichnisse
+behalten ihre Rechte und Inhalte. Der Job legt das Plattform-Stammverzeichnis
+nicht an und ändert weder Eigentümer noch Rechte vorhandener Verzeichnisse.
+Fehlt dem Runner der Zugriff, schlägt er mit einer eindeutigen Meldung fehl;
+ein Plattformadmin muss dann die gemeinsamen Berechtigungen korrigieren.
+
+Anwendungsverantwortliche können den Container daher ohne einen separaten
+manuellen Schritt zur Anlage des Anwendungsverzeichnisses deployen. Sobald er
+auf dem Host läuft, nehmen die Hosting-Admins das Backend ab und konfigurieren
+öffentliches Routing, DNS, TLS und gegebenenfalls Zugriffsbeschränkungen.
 
 Nach der Abnahme enthält `DEPLOY_DIR/compose.json` die aufgelösten
 Laufzeiteinstellungen; `DEPLOY_DIR/release.txt` erfasst Pipeline-ID, Commit und
@@ -270,6 +382,10 @@ aus. Sie können denselben Python-Befehl lokal mit Python 3.13 und installiertem
 Flask ausführen; die Shell-Skript-Tests benötigen zusätzlich Bash (Git for
 Windows wird unterstützt). Die Skript-Tests nutzen ein simuliertes
 Git-Programm und pushen niemals oder legen echte Repositories an.
+Tests für Deployment-Verzeichnisse laufen unter Linux/POSIX mit Bash und GNU
+`realpath`; sie prüfen echte Verzeichnisanlage und Pfadgrenzen in temporären
+Ordnern. Berechtigungstests benötigen zusätzlich einen Benutzer ohne Root-Rechte,
+wie er im lokalen Testcontainer verwendet wird.
 
 | Symptom | Was zu prüfen ist |
 |---|---|
