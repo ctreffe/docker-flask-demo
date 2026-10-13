@@ -1,0 +1,4 @@
+# Flask handles HTTP requests and renders the HTML template.
+Flask==3.1.3
+# Gunicorn serves the app in the Linux container; it is not needed for app.py on Windows.
+gunicorn==26.2.0

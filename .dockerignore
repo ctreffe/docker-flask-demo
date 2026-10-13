@@ -1,0 +1,7 @@
+# A small build context is easier to understand and cannot accidentally include secrets.
+*
+!Dockerfile
+!requirements.txt
+!app.py
+!templates/
+!templates/**

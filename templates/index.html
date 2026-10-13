@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Docker Flask Demo</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 3rem auto; max-width: 42rem; padding: 0 1rem; line-height: 1.6; }
+      h1 { line-height: 1.2; }
+      code { background: #eef1f4; padding: 0.15rem 0.3rem; border-radius: 0.2rem; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <!-- Jinja replaces the expression below with the app's configured text. -->
+      <h1>{{ greeting }}</h1>
+      <p>This Flask application is running inside a Docker container.</p>
+      <p>Change <code>GREETING_TEXT</code> and recreate the container to change this greeting.</p>
+    </main>
+  </body>
+</html>

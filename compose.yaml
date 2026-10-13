@@ -1,0 +1,19 @@
+# Local use: `docker compose up --build --detach` builds and starts the demo.
+services:
+  app:
+    build: .
+    image: docker-flask-demo:local
+    # Bind only to this computer. Public hosting uses compose.hosting.yaml instead.
+    ports:
+      - "127.0.0.1:${APP_PORT:-5000}:8000"
+    # Compose reads .env for substitution. Values reach the container only when
+    # they are explicitly listed here; .env is not loaded by the Flask app itself.
+    environment:
+      GREETING_TEXT: "${GREETING_TEXT:-Hello from the Flask container!}"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true

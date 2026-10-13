@@ -218,3 +218,19 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Additional rules for this container demo.
+# Real settings and secrets are local; only the harmless template is versioned.
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+# CI artifacts are generated, not maintained source files.
+release.env
+sync-result.txt
+# Host-specific troubleshooting notes may contain local paths and are not public.
+TROUBLESHOOTING.local.md
